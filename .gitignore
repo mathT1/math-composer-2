@@ -1,0 +1,12 @@
+# 공개 저장소에 올리지 않는 것 (결정 D20)
+docs/
+Math-Composer/
+CLAUDE.md
+
+node_modules/
+dist/
+dev-dist/
+*.log
+.DS_Store
+test-results/
+playwright-report/
