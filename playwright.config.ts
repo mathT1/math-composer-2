@@ -9,8 +9,8 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: 'http://localhost:4173',
-    // 갤럭시 탭 S7 가로 방향에 가까운 화면
-    viewport: { width: 1280, height: 800 },
+    // 갤럭시 탭 S7 가로 방향 실측(2026-11-12): 약 1036×700 CSS px. 세로는 테스트 안에서 753×1000으로 바꿔 본다
+    viewport: { width: 1036, height: 700 },
     hasTouch: true,
     launchOptions: {
       args: [

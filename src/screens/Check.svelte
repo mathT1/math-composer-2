@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { registerSW } from 'virtual:pwa-register';
+  import { buildOutput, CEILING, engine, scheduleNote, waveFor } from '../audio/engine';
+  import { offline as offlineState } from '../lib/offline.svelte';
+  import { TIMBRE_PRESETS } from '../store/project';
   import { cents, detectPitch } from '../dsp/pitch';
   import { encodeWav } from '../audio/wav';
 
@@ -16,8 +18,14 @@
   };
 
   // ── 2. 오프라인 ───────────────────────────────────
-  let offline = $state('확인 중');
-  let online = $state(navigator.onLine);
+  const offline = $derived(
+    offlineState.status === 'ready'
+      ? `준비 완료 (이제 인터넷 없이 열림)${offlineState.hasUpdate ? ', 새 판이 있음' : ''}`
+      : offlineState.status === 'failed'
+        ? `준비 실패: ${offlineState.error}`
+        : '확인 중',
+  );
+  const online = $derived(offlineState.online);
 
   // ── 3. 마이크 ─────────────────────────────────────
   let ctx: AudioContext | null = null;
@@ -46,6 +54,8 @@
   // ── 4. 소리 내기 ──────────────────────────────────
   let osc: OscillatorNode | null = null;
   let tonePlaying = $state(false);
+  let enginePlayed = $state('');
+  let ceiling = $state('');
 
   // ── 5. 저장 ───────────────────────────────────────
   let marker = $state('확인 중');
@@ -210,6 +220,31 @@
     describeAudio();
   }
 
+  /** 앱의 소리 엔진(컴프레서와 제한기를 거침)으로 도·미·솔을 차례로 낸 뒤 함께 낸다 */
+  async function playEngine() {
+    await engine.wake();
+    const h = TIMBRE_PRESETS.날카로운;
+    const notes = [261.63, 329.63, 392.0];
+    notes.forEach((f, i) => setTimeout(() => engine.play(h, f, 0.45), i * 450));
+    setTimeout(() => notes.forEach((f) => engine.play(h, f, 1.2, 1)), 1500);
+    enginePlayed = '엔진 소리를 냄';
+  }
+
+  /** 지나치게 큰 소리 여덟 개를 한꺼번에 넣고, 출력 경로를 지난 뒤의 최댓값을 잰다(소리는 나지 않는다) */
+  async function testCeiling() {
+    const rate = 44100;
+    const off = new OfflineAudioContext(1, rate * 2, rate);
+    const out = buildOutput(off);
+    const h = TIMBRE_PRESETS.날카로운;
+    for (const f of [65.41, 130.81, 196, 261.63, 329.63, 392, 523.25, 659.25]) {
+      scheduleNote(off, out, waveFor(off, h, f), { freq: f, start: 0.05, duration: 1.8, gain: 1 });
+    }
+    const data = (await off.startRendering()).getChannelData(0);
+    let peak = 0;
+    for (let i = 0; i < data.length; i++) peak = Math.max(peak, Math.abs(data[i]));
+    ceiling = `최댓값 ${peak.toFixed(3)} (한계 ${CEILING}) ${peak <= CEILING + 1e-6 && peak > 0.05 ? '통과' : '실패'}`;
+  }
+
   // ── 저장 ──
   function db(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
@@ -307,7 +342,8 @@
       `마이크: ${micState}${micError ? ` (${micError})` : ''}`,
       ...Object.entries(settings).map(([k, v]) => `${k}: ${v}`),
       `마이크 목록(★은 지금 쓰는 것): ${devices.map((d) => `${d.id === currentDevice ? '★' : ''}${d.label} [id ${d.id.slice(0, 8)}, 묶음 ${d.group.slice(0, 6)}]`).join(' / ') || '없음'}`,
-      `소리 장치: ${audioInfo || '아직 소리를 켜지 않음'}`,
+      `소리 장치: ${audioInfo || '아직 소리를 켜지 않음'}${enginePlayed ? `, ${enginePlayed}` : ''}`,
+      `출력 한계: ${ceiling || '확인하지 않음'}`,
       `3초 녹음: ${recResult || '하지 않음'}`,
       `저장 표식: ${marker}`,
       `저장소 보호: ${persisted}${quota ? `, ${quota}` : ''}`,
@@ -326,24 +362,7 @@
   }
 
   onMount(() => {
-    const update = registerSW({
-      onOfflineReady() {
-        offline = '준비 완료 (이제 인터넷 없이 열림)';
-      },
-      onNeedRefresh() {
-        offline = '새 판이 있음. 갱신 중';
-        void update(true);
-      },
-      onRegisteredSW(_url, registration) {
-        if (registration?.active && offline === '확인 중') offline = '준비 완료 (이제 인터넷 없이 열림)';
-      },
-      onRegisterError(error) {
-        offline = `준비 실패: ${String(error)}`;
-      },
-    });
-    const on = () => (online = navigator.onLine);
-    window.addEventListener('online', on);
-    window.addEventListener('offline', on);
+    offlineState.start();
     void readMarker();
     void navigator.storage?.persisted?.().then((p) => (persisted = p ? '보호됨' : '보호되지 않음'));
     void navigator.storage?.estimate?.().then((e) => {
@@ -351,8 +370,8 @@
     });
     return () => {
       stopMic();
-      window.removeEventListener('online', on);
-      window.removeEventListener('offline', on);
+      if (osc) osc.stop();
+      engine.stop();
     };
   });
 </script>
@@ -448,10 +467,14 @@
     <h2>4. 소리 내기</h2>
     <div class="row">
       <button onclick={toggleTone}>{tonePlaying ? '440Hz 끄기' : '440Hz 켜기'}</button>
+      <button class="quiet" onclick={playEngine}>도·미·솔 듣기</button>
+      <button class="quiet" onclick={testCeiling}>출력 한계 확인</button>
       <span class="status">{audioInfo}</span>
     </div>
+    {#if ceiling}<p class="reading small" data-testid="ceiling">{ceiling}</p>{/if}
     <p class="todo">
-      버튼을 누른 순간과 소리가 나는 순간 사이가 느껴질 만큼 벌어지는지 보세요. 본체 스피커, 유선 이어폰, 블루투스
+      “도·미·솔 듣기”는 앱이 실제로 쓰는 소리 경로입니다. 세 음이 차례로 난 뒤 함께 울립니다. 함께 울릴 때 소리가 찢어지거나
+      갑자기 커지지 않는지 들어 주세요. 버튼을 누른 순간과 소리가 나는 순간 사이가 느껴질 만큼 벌어지는지 보세요. 본체 스피커, 유선 이어폰, 블루투스
       이어폰에서 각각 어떤지 알려 주세요.
     </p>
   </section>
@@ -503,14 +526,9 @@
 </main>
 
 <style>
-  :global(body) {
-    margin: 0;
-    background: #fff;
+  main {
     color: #17212b;
     font: 17px/1.6 system-ui, 'Noto Sans KR', sans-serif;
-    -webkit-text-size-adjust: 100%;
-  }
-  main {
     max-width: 46rem;
     margin: 0 auto;
     padding: 1.5rem 1.25rem 4rem;

@@ -6,7 +6,7 @@ test('기기 점검 페이지가 자기 주소 밖으로 요청하지 않는다'
     const url = r.url();
     if (!url.startsWith(baseURL!) && !url.startsWith('blob:') && !url.startsWith('data:')) outside.push(url);
   });
-  await page.goto('/');
+  await page.goto('/#/check');
   await expect(page.getByRole('heading', { name: '기기 점검' })).toBeVisible();
   await expect(page.getByTestId('offline')).toContainText('준비 완료', { timeout: 20_000 });
   expect(outside).toEqual([]);
@@ -16,7 +16,7 @@ test('마이크로 440Hz를 측정하고 녹음한다', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  await page.goto('/');
+  await page.goto('/#/check');
   await page.getByRole('button', { name: '마이크 켜기' }).click();
   await expect(page.getByTestId('mic')).toHaveText('켜짐', { timeout: 10_000 });
 
@@ -35,7 +35,7 @@ test('마이크로 440Hz를 측정하고 녹음한다', async ({ page }) => {
 });
 
 test('인터넷이 끊겨도 다시 열린다', async ({ page, context }) => {
-  await page.goto('/');
+  await page.goto('/#/check');
   await expect(page.getByTestId('offline')).toContainText('준비 완료', { timeout: 20_000 });
   await context.setOffline(true);
   await page.reload();
@@ -46,7 +46,7 @@ test('인터넷이 끊겨도 다시 열린다', async ({ page, context }) => {
 });
 
 test('저장 표식이 다시 열어도 남아 있다', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/#/check');
   await page.getByRole('button', { name: '표식 남기기' }).click();
   await expect(page.getByTestId('marker')).toContainText('방금 남김');
   await page.reload();
@@ -54,7 +54,7 @@ test('저장 표식이 다시 열어도 남아 있다', async ({ page }) => {
 });
 
 test('파일 네 가지를 내려받는다', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/#/check');
   for (const [button, file] of [
     ['소리 파일', '점검_소리.wav'],
     ['앨범 HTML', '점검_앨범.html'],

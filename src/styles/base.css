@@ -1,0 +1,156 @@
+/* 값은 docs/디자인.md(시안 나, 악보)를 따른다. 여기 없는 색과 크기를 화면에서 새로 만들지 않는다. */
+
+@font-face {
+  font-family: 'Hahmlet';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../assets/fonts/Hahmlet-KS2350.woff2') format('woff2');
+}
+
+:root {
+  --cover: #35597c;
+  --page: #ffffff;
+  --ink: #101214;
+  --staff: #7c838a;
+  --pencil: #c2362b;
+  --wash: #e9eef3;
+  --ink-soft: #474d53;
+  --rule: #d4d9dd;
+
+  --cover-w: 204px;
+  --tap: 48px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 400 17px/1.55 'Hahmlet', 'Noto Serif KR', serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  /* 한글은 낱말 가운데에서 줄을 바꾸지 않는다 */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+#app {
+  height: 100%;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+/* 누르는 것은 알약 모양 */
+.btn {
+  appearance: none;
+  min-height: 50px;
+  padding: 0 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--ink);
+  border-radius: 26px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.btn.ink {
+  background: var(--ink);
+  color: #fff;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* 종이 위의 것은 각지게: 글 넣는 칸은 밑줄 하나 */
+.field {
+  display: grid;
+  gap: 2px;
+}
+.field span {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+.field input {
+  appearance: none;
+  min-height: var(--tap);
+  width: 100%;
+  padding: 6px 2px;
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 700;
+}
+.field input:focus-visible {
+  outline: none;
+  border-bottom-width: 4px;
+  padding-bottom: 4px;
+  background: var(--wash);
+}
+.field input::placeholder {
+  color: var(--ink-soft);
+  font-weight: 400;
+}
+
+/* 알림: 빨간 연필을 쓰지 않는다. 먹색 글과 굵은 왼쪽 줄 */
+.notice {
+  border-left: 6px solid var(--ink);
+  padding: 4px 0 4px 14px;
+  font-weight: 700;
+}
+
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.frac {
+  display: inline-grid;
+  line-height: 1.05;
+  font-weight: 700;
+  text-align: center;
+  vertical-align: middle;
+}
+.frac i {
+  font-style: normal;
+  border-top: 1.5px solid currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

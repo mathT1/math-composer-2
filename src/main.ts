@@ -1,4 +1,5 @@
 import { mount } from 'svelte';
-import Check from './screens/Check.svelte';
+import './styles/base.css';
+import App from './App.svelte';
 
-mount(Check, { target: document.getElementById('app')! });
+mount(App, { target: document.getElementById('app')! });
