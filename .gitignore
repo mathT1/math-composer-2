@@ -10,3 +10,6 @@ dev-dist/
 .DS_Store
 test-results/
 playwright-report/
+
+# 예시음 원본(다듬은 것만 public/samples에 넣는다)
+예시음/
