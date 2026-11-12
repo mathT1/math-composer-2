@@ -15,16 +15,18 @@ export interface PitchOptions {
   maxFreq?: number;
   /** 가장 높은 봉우리의 몇 배 이상이면 첫 봉우리로 채택할지 */
   threshold?: number;
+  /** 더하는 구간의 최대 길이(샘플). 손잡이를 끄는 동안처럼 빨리 답해야 할 때 줄인다. 줄이면 정확도가 조금 떨어진다 */
+  maxWindow?: number;
 }
 
-const DEFAULTS = { minFreq: 60, maxFreq: 2000, threshold: 0.93 };
+const DEFAULTS = { minFreq: 60, maxFreq: 2000, threshold: 0.93, maxWindow: Infinity };
 
 export function detectPitch(
   samples: Float32Array,
   sampleRate: number,
   options: PitchOptions = {},
 ): PitchResult {
-  const { minFreq, maxFreq, threshold } = { ...DEFAULTS, ...options };
+  const { minFreq, maxFreq, threshold, maxWindow } = { ...DEFAULTS, ...options };
   const n = samples.length;
   const maxLag = Math.min(Math.floor(sampleRate / minFreq), Math.floor(n / 2));
   const minLag = Math.max(2, Math.floor(sampleRate / maxFreq));
@@ -36,7 +38,7 @@ export function detectPitch(
   mean /= n;
 
   // 모든 지연에서 같은 길이를 더해 창 길이에 따른 치우침을 없앤다
-  const w = n - maxLag;
+  const w = Math.min(n - maxLag, Math.max(maxLag, maxWindow));
   const x = new Float64Array(n);
   let energy = 0;
   for (let i = 0; i < n; i++) {
@@ -54,7 +56,7 @@ export function detectPitch(
     const m = energy + shifted;
     nsdf[lag] = m > 0 ? (2 * acf) / m : 0;
     // 다음 지연을 위해 창을 한 칸 민다
-    shifted += x[lag + w] * x[lag + w] - x[lag] * x[lag];
+    if (lag < maxLag) shifted += x[lag + w] * x[lag + w] - x[lag] * x[lag];
   }
 
   // 첫 음의 구간을 지난 뒤, 양의 구간마다 가장 높은 점을 모은다

@@ -41,10 +41,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'index.html',
-        // 디자인 시안. 방향이 정해지면 지운다
-        ga: 'design/ga.html',
+        // 고른 시안(나). 실제 화면이 만들어지면 지운다
         na: 'design/na.html',
-        da: 'design/da.html',
       },
     },
   },

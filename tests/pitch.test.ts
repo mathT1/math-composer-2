@@ -89,4 +89,27 @@ describe('기본 주파수 측정 (작업지시서 6.3절)', () => {
     }
     expect(detectPitch(noise, SR).clarity).toBeLessThan(0.5);
   });
+
+  it('동작 범위의 양 끝(65Hz, 1568~1976Hz)에서도 ±5센트 이내', () => {
+    for (const f of [65.41, 1046.5, 1567.98, 1975.53]) {
+      const { f0 } = detectPitch(tone(f, [1, 0.4, 0.2]), SR);
+      expect(f0, `${f}Hz에서 측정 실패`).not.toBeNull();
+      expect(Math.abs(cents(f, f0!))).toBeLessThan(5);
+    }
+  });
+
+  it('소리가 점점 작아져도 ±3센트 이내', () => {
+    for (const f of [110, 261.63, 523.25, 880]) {
+      const x = tone(f, [1, 0.5, 0.3]);
+      for (let i = 0; i < x.length; i++) x[i] *= 1 - 0.6 * (i / x.length);
+      expect(Math.abs(cents(f, detectPitch(x, SR).f0!))).toBeLessThan(3);
+    }
+  });
+
+  it('구간을 줄여 빨리 재도 ±5센트 이내', () => {
+    for (const f of [98, 261.63, 523.25, 1000]) {
+      const { f0 } = detectPitch(tone(f, [1, 0.5, 0.3]), SR, { maxWindow: 3200 });
+      expect(Math.abs(cents(f, f0!))).toBeLessThan(5);
+    }
+  });
 });

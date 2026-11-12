@@ -29,7 +29,8 @@
 
   let micState = $state<'꺼짐' | '켜는 중' | '켜짐' | '실패'>('꺼짐');
   let micError = $state('');
-  let devices = $state<{ id: string; label: string }[]>([]);
+  let devices = $state<{ id: string; label: string; group: string }[]>([]);
+  let currentDevice = $state("");
   let chosenDevice = $state('');
   let settings = $state<Record<string, string>>({});
   let level = $state(0);
@@ -99,7 +100,8 @@
       const all = await navigator.mediaDevices.enumerateDevices();
       devices = all
         .filter((d) => d.kind === 'audioinput')
-        .map((d, i) => ({ id: d.deviceId, label: d.label || `마이크 ${i + 1}` }));
+        .map((d, i) => ({ id: d.deviceId, label: d.label || `마이크 ${i + 1}`, group: d.groupId }));
+      currentDevice = s.deviceId ?? '';
 
       const source = audio.createMediaStreamSource(stream);
       analyser = audio.createAnalyser();
@@ -304,7 +306,7 @@
       `오프라인 준비: ${offline}`,
       `마이크: ${micState}${micError ? ` (${micError})` : ''}`,
       ...Object.entries(settings).map(([k, v]) => `${k}: ${v}`),
-      `마이크 목록: ${devices.map((d) => d.label).join(' / ') || '없음'}`,
+      `마이크 목록(★은 지금 쓰는 것): ${devices.map((d) => `${d.id === currentDevice ? '★' : ''}${d.label} [id ${d.id.slice(0, 8)}, 묶음 ${d.group.slice(0, 6)}]`).join(' / ') || '없음'}`,
       `소리 장치: ${audioInfo || '아직 소리를 켜지 않음'}`,
       `3초 녹음: ${recResult || '하지 않음'}`,
       `저장 표식: ${marker}`,
@@ -423,7 +425,8 @@
       </p>
       <p class="todo">
         세 가지 보정(반향 제거, 잡음 억제, 자동 음량 조절)이 모두 “꺼짐”이어야 합니다. 다른 기기에서 440Hz 소리를
-        틀거나 아래 4번의 440Hz를 켠 채로 숫자가 440 근처에 머무는지 보세요. 블루투스 이어폰을 연결한 상태로도 한 번
+        틀거나 아래 4번의 440Hz를 켠 채로 숫자가 440 근처에 머무는지 보세요. 이어폰을 쓰는 중이면 소리가 이어폰으로만 나가
+        마이크에 들어오지 않으니, 다른 기기에서 440Hz를 틀거나 이어폰을 잠시 빼세요. 블루투스 이어폰을 연결한 상태로도 한 번
         더 해 보고, “쓰고 있는 마이크”가 이어폰으로 바뀌는지 확인해 주세요.
       </p>
       <div class="row">
