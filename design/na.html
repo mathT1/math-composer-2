@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>시안 나 — 악보</title>
+    <style>
+      :root {
+        --cover: #35597c; /* 악보집 표지 */
+        --page: #ffffff;
+        --ink: #101214; /* 조판 먹 */
+        --staff: #7c838a; /* 오선 */
+        --pencil: #c2362b; /* 연습할 때 긋는 빨간 연필 */
+        --wash: #e9eef3;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #b9c3cc; color: var(--ink); font: 400 17px/1.55 'Hahmlet Variable', serif; font-variant-numeric: tabular-nums; }
+      .note { max-width: 1280px; margin: 0 auto; padding: 20px 24px; }
+      .note h1 { margin: 0 0 4px; font-size: 22px; font-weight: 700; }
+      .note p { margin: 0; max-width: 60em; }
+      .frame { width: 1280px; height: 800px; margin: 0 auto 28px; background: var(--page); display: grid; grid-template-columns: 236px 1fr; overflow: hidden; }
+
+      /* 표지: 목차가 곧 단계 */
+      .cover { background: var(--cover); color: #fff; padding: 28px 24px 22px; display: flex; flex-direction: column; }
+      .cover h2 { margin: 0; font-size: 30px; font-weight: 800; line-height: 1.15; letter-spacing: -0.01em; }
+      .cover .by { margin: 10px 0 0; font-size: 16px; opacity: 0.85; }
+      .cover ol { list-style: none; margin: 30px 0 0; padding: 0; counter-reset: s; border-top: 1px solid #ffffff66; }
+      .cover li { counter-increment: s; display: grid; grid-template-columns: 30px 1fr; align-items: center; min-height: 54px; border-bottom: 1px solid #ffffff66; font-size: 20px; font-weight: 500; }
+      .cover li::before { content: counter(s); font-size: 16px; opacity: 0.8; }
+      .cover li.extra::before { content: '+'; }
+      .cover li[aria-current] { font-weight: 800; background: #fff; color: var(--cover); margin: 0 -24px; padding: 0 24px; border-color: #fff; }
+      .cover li[aria-current]::before { opacity: 1; }
+      .cover .saved { margin-top: auto; font-size: 14px; opacity: 0.85; }
+
+      .page { padding: 26px 34px 26px 38px; min-width: 0; display: grid; }
+      h3 { margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.015em; line-height: 1.1; }
+      .sub { margin: 4px 0 0; color: #474d53; }
+      .btn { all: unset; min-height: 50px; padding: 0 22px; display: inline-flex; align-items: center; justify-content: center; border: 2px solid var(--ink); border-radius: 26px; font-weight: 700; font-size: 17px; }
+      .btn.ink { background: var(--ink); color: #fff; }
+      .cap { font-size: 15px; color: #474d53; margin: 0 0 4px; }
+
+      /* 분석대 */
+      .bench { grid-template-columns: 1fr 318px; grid-template-rows: auto 1fr; gap: 14px 34px; }
+      .head { grid-column: 1 / -1; display: flex; align-items: end; gap: 22px; }
+      .head .tabs { margin-left: auto; display: flex; gap: 20px; font-size: 17px; }
+      .head .tabs span { padding-bottom: 4px; }
+      .head .tabs span[aria-current] { font-weight: 800; border-bottom: 3px solid var(--pencil); }
+      .plots { display: grid; grid-template-rows: auto 1.15fr auto 1fr; min-height: 0; }
+      .plots svg { display: block; width: 100%; height: 100%; min-height: 0; }
+      .result .hz { font-size: 74px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+      .result .hz small { font-size: 24px; font-weight: 500; letter-spacing: 0; margin-left: 6px; }
+      .result .say { font-size: 20px; margin: 8px 0 18px; }
+      .result .say b { color: var(--pencil); font-weight: 800; }
+      .result { display: flex; flex-direction: column; }
+      .result table { border-collapse: collapse; width: 100%; margin: 18px 0; font-size: 16px; }
+      .result td { padding: 8px 0; border-top: 1px solid #c9ced3; }
+      .result tr:last-child td { border-bottom: 1px solid #c9ced3; }
+      .result td:last-child { text-align: right; font-weight: 700; }
+      .result .btn { margin-top: auto; }
+
+      /* 작곡실 */
+      .studio { grid-template-columns: 1fr 232px; grid-template-rows: auto 1fr; gap: 12px 30px; }
+      .system { position: relative; display: grid; grid-template-columns: 84px repeat(16, 1fr); grid-template-rows: 26px repeat(8, 58px) 16px 54px; align-content: start; }
+      .system .lab { display: flex; flex-direction: column; justify-content: center; font-weight: 800; font-size: 19px; line-height: 1.05; }
+      .system .lab small { font-weight: 400; font-size: 13.5px; color: #474d53; }
+      .system .c { position: relative; border-left: 1px solid #d4d9dd; }
+      .system .c::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 1.5px solid var(--staff); }
+      .system .c.bar { border-left: 3px solid var(--ink); }
+      .system .c.end { border-right: 3px solid var(--ink); }
+      .system .c.on::after { content: ''; position: absolute; left: 50%; top: 50%; width: 40px; height: 29px; margin: -14.5px 0 0 -20px; background: var(--ink); border-radius: 50%; transform: rotate(-20deg); }
+      .system .c.now { background: #c2362b1f; }
+      .system .c.now.on::after { background: var(--pencil); }
+      .system .num { font-size: 14px; color: #474d53; align-self: end; padding-left: 5px; }
+      .system .ch { display: grid; place-items: center; font-size: 24px; font-weight: 700; border-left: 1px solid #d4d9dd; background: var(--wash); }
+      .system .ch.bar { border-left: 3px solid var(--ink); }
+      .system .ch.end { border-right: 3px solid var(--ink); }
+      .aside { display: flex; flex-direction: column; gap: 18px; }
+      .tempo { font-size: 40px; font-weight: 800; line-height: 1; }
+      .seg { display: grid; grid-template-columns: 1fr 1fr; border: 2px solid var(--ink); border-radius: 26px; overflow: hidden; }
+      .seg span { min-height: 48px; display: grid; place-items: center; font-weight: 700; }
+      .seg span[aria-current] { background: var(--ink); color: #fff; }
+      .ratios { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 4px; font-size: 15px; text-align: center; }
+      .ratios b { display: block; font-size: 16px; }
+      .frac { display: inline-grid; line-height: 1.05; font-weight: 700; }
+      .frac i { font-style: normal; border-top: 1.5px solid var(--ink); }
+    </style>
+  </head>
+  <body>
+    <div class="note">
+      <h1>시안 나. 악보</h1>
+      <p>출발점은 악보집입니다. 표지 색면이 목차이자 단계 이동이고, 본문은 흰 종이에 먹으로 조판한 악보처럼 읽힙니다. 과감하게 쓴 한 곳은 작곡 격자를 줄과 음표 머리로 그린 것입니다. 서체는 함렛.</p>
+    </div>
+
+    <div class="frame">
+      <div class="cover" id="cover1"></div>
+      <div class="page bench">
+        <div class="head">
+          <div><h3>리코더 도</h3><p class="sub">3.2초 녹음 가운데 0.5초를 골랐습니다</p></div>
+          <div class="tabs"><span aria-current="true">리코더 도</span><span>리코더 솔</span><span>내 목소리</span></div>
+        </div>
+        <div class="plots">
+          <p class="cap">파형. 빨간 괄호를 옮겨 분석할 곳을 고릅니다</p>
+          <svg id="wave" viewBox="0 0 660 250" preserveAspectRatio="none"></svg>
+          <p class="cap" style="margin-top: 12px">배음. 기본음의 몇 배 자리에 얼마나 센 소리가 있는지</p>
+          <svg id="spec" viewBox="0 0 660 210" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="result">
+          <p class="cap">기본 주파수</p>
+          <div class="hz">523.9<small>Hz</small></div>
+          <p class="say">도5보다 <b>2센트 높음</b></p>
+          <svg id="ruler" viewBox="0 0 318 64" style="width: 100%"></svg>
+          <table>
+            <tr><td>주기</td><td>1.909 ms</td></tr>
+            <tr><td>측정 신뢰도</td><td>높음</td></tr>
+            <tr><td>가장 센 배음</td><td>2배음, 기본음의 42%</td></tr>
+          </table>
+          <button class="btn ink">이 소리를 내 음색으로 쓰기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="frame">
+      <div class="cover" id="cover2"></div>
+      <div class="page studio">
+        <div class="head" style="grid-column: 1 / -1; display: flex; align-items: end; gap: 22px">
+          <div><h3>첫 번째 곡</h3><p class="sub">순정률 장음계, 리코더 도의 음색</p></div>
+        </div>
+        <div class="system" id="system"></div>
+        <div class="aside">
+          <div><p class="cap">빠르기</p><div class="tempo">♩ = 96</div></div>
+          <div><p class="cap">구간</p><div class="seg"><span aria-current="true">1~4마디</span><span>5~8마디</span></div></div>
+          <div><p class="cap">내 음계의 주파수 비</p><div class="ratios" id="ratios"></div></div>
+          <button class="btn ink" style="margin-top: auto">처음부터 듣기</button>
+          <button class="btn">방금 한 것 되돌리기</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import '@fontsource-variable/hahmlet';
+      import { $, chords, melody, playhead, scale, sound, stages, stepHz, wavePath } from './shared.ts';
+
+      const cover = (current) =>
+        `<h2>소리의<br>수학</h2><p class="by">김하늘의 작업</p><ol>${stages
+          .map((s) => `<li ${s === current ? 'aria-current="step"' : ''}>${s}</li>`)
+          .join('')}<li class="extra">심화</li></ol><p class="saved">10시 42분에 저장됨</p>`;
+      $('cover1').innerHTML = cover('보기');
+      $('cover2').innerHTML = cover('만들기');
+
+      // 파형을 오선 위에 얹는다
+      let w = '';
+      for (let i = 0; i < 5; i++) w += `<line x1="0" y1="${45 + i * 40}" x2="660" y2="${45 + i * 40}" stroke="#7c838a" stroke-width="1.2"/>`;
+      w += `<line x1="1.5" y1="45" x2="1.5" y2="205" stroke="#101214" stroke-width="3"/><line x1="658.5" y1="45" x2="658.5" y2="205" stroke="#101214" stroke-width="3"/>`;
+      w += `<rect x="198" y="14" width="264" height="222" fill="#c2362b" fill-opacity=".09"/>`;
+      w += `<path d="${wavePath(660, 250, 10)}" fill="none" stroke="#101214" stroke-width="2.6" stroke-linejoin="round"/>`;
+      const bracket = (x, dir) => `<path d="M${x + dir * 14} 14H${x}V236H${x + dir * 14}" fill="none" stroke="#c2362b" stroke-width="4"/><circle cx="${x}" cy="125" r="13" fill="#c2362b"/>`;
+      w += bracket(198, 1) + bracket(462, -1);
+      $('wave').innerHTML = w;
+
+      // 배음: 기둥 끝에 음표 머리
+      let s = `<line x1="0" y1="170" x2="660" y2="170" stroke="#101214" stroke-width="2"/>`;
+      sound.harmonics.forEach((a, k) => {
+        const x = 58 + k * 78;
+        const top = 170 - a * 138;
+        s += `<line x1="${x}" y1="170" x2="${x}" y2="${top}" stroke="#101214" stroke-width="3"/>`;
+        s += `<ellipse cx="${x}" cy="${top}" rx="13" ry="9.5" transform="rotate(-20 ${x} ${top})" fill="#101214"/>`;
+        s += `<text x="${x}" y="196" text-anchor="middle" font-size="17" font-weight="700" fill="#101214">${k + 1}배</text>`;
+        if (k < 2) s += `<text x="${x + 20}" y="${top + 5}" font-size="15" fill="#474d53">${Math.round((k + 1) * sound.f0)} Hz</text>`;
+      });
+      $('spec').innerHTML = s;
+
+      // 센트 자
+      let r = `<line x1="34" y1="30" x2="284" y2="30" stroke="#101214" stroke-width="2"/>`;
+      for (let c = -50; c <= 50; c += 10) {
+        const x = 159 + c * 2.5;
+        r += `<line x1="${x}" y1="${c % 50 === 0 ? 14 : 22}" x2="${x}" y2="30" stroke="#101214" stroke-width="${c % 50 === 0 ? 2.5 : 1.2}"/>`;
+        if (c % 50 === 0) r += `<text x="${x}" y="56" text-anchor="middle" font-size="15" fill="#474d53">${c > 0 ? '+' : ''}${c}</text>`;
+      }
+      r += `<path d="M${159 + sound.cents * 2.5} 30l-8-22h16z" fill="#c2362b"/>`;
+      $('ruler').innerHTML = r;
+
+      // 작곡: 줄 위의 음표 머리
+      let html = '<div></div>';
+      for (let c = 0; c < 16; c++) html += `<div class="num">${c % 4 === 0 ? c / 4 + 1 : ''}</div>`;
+      for (let row = scale.steps.length - 1; row >= 0; row--) {
+        html += `<div class="lab">${scale.steps[row].label}<small>${stepHz(row).toFixed(1)} Hz</small></div>`;
+        for (let c = 0; c < 16; c++)
+          html += `<div class="c${c % 4 === 0 ? ' bar' : ''}${c === 15 ? ' end' : ''}${melody[c] === row ? ' on' : ''}${c === playhead ? ' now' : ''}"></div>`;
+      }
+      html += '<div style="grid-column: 1 / -1"></div><div class="lab">화음</div>';
+      for (let c = 0; c < 16; c++) html += `<div class="ch${c % 4 === 0 ? ' bar' : ''}${c === 15 ? ' end' : ''}">${chords[c]}</div>`;
+      $('system').innerHTML = html;
+
+      $('ratios').innerHTML = scale.steps
+        .map((st) => {
+          const [a, b] = st.ratio.split('/');
+          return `<div><b>${st.label}</b>${b ? `<span class="frac"><span>${a}</span><i>${b}</i></span>` : `<span class="frac"><span>${a}</span></span>`}</div>`;
+        })
+        .join('');
+    </script>
+  </body>
+</html>

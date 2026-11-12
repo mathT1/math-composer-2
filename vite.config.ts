@@ -28,12 +28,25 @@ export default defineConfig({
       workbox: {
         // 기본 설정은 글꼴과 소리 파일을 캐시하지 않는다. 오프라인에서 빠지는 것이 없도록 모두 적는다
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,woff,ttf,wav,mp3,ogg,m4a,json,webmanifest}'],
+        // 시안 세 가지의 글꼴(약 18MB)은 미리 캐시하지 않는다. 서체가 정해지면 한글 2,350자로 줄여 내장하고 이 줄을 지운다
+        globIgnores: ['design/**', '**/*.woff', '**/*.woff2'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         navigateFallback: null,
       },
     }),
   ],
-  build: { target: 'es2022' },
+  build: {
+    target: 'es2022',
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        // 디자인 시안. 방향이 정해지면 지운다
+        ga: 'design/ga.html',
+        na: 'design/na.html',
+        da: 'design/da.html',
+      },
+    },
+  },
   test: { include: ['tests/**/*.test.ts'] },
 });

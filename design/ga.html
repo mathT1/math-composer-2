@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>시안 가 — 측정 기구</title>
+    <style>
+      :root {
+        --panel: #d3d9db; /* 알루미늄 패널 */
+        --body: #2c3a41; /* 기구 몸체 */
+        --lcd: #c6d4c0; /* 액정 */
+        --ink: #17231b; /* 액정 글자 */
+        --needle: #de3f1d; /* 바늘 */
+        --brass: #a47f24; /* 놋쇠 */
+        --edge: #9aa5a9;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #8d989c;
+        color: #162025;
+        font: 500 16px/1.45 'IBM Plex Sans KR', sans-serif;
+        font-variant-numeric: tabular-nums;
+      }
+      .note { max-width: 1280px; margin: 0 auto; padding: 20px 24px; color: #0f171a; }
+      .note h1 { margin: 0 0 4px; font-size: 22px; }
+      .note p { margin: 0; max-width: 60em; }
+      .frame { width: 1280px; height: 800px; margin: 0 auto 28px; background: var(--panel); display: grid; grid-template-rows: 64px 1fr; overflow: hidden; }
+
+      /* 위쪽 몸체: 단계 선택 */
+      .top { background: var(--body); color: #e8eef0; display: flex; align-items: center; padding: 0 24px; gap: 28px; }
+      .work { font-weight: 600; font-size: 17px; white-space: nowrap; }
+      .range { display: flex; flex: 1; justify-content: center; gap: 4px; }
+      .range button { all: unset; min-width: 96px; height: 48px; display: grid; grid-template-rows: 14px 1fr; justify-items: center; align-items: center; font-size: 16px; color: #aebbc0; border-bottom: 3px solid #45555d; }
+      .range button i { width: 8px; height: 8px; border-radius: 50%; background: #45555d; margin-top: 6px; }
+      .range button[aria-current] { color: #fff; border-color: var(--needle); font-weight: 700; }
+      .range button[aria-current] i { background: var(--needle); box-shadow: 0 0 0 3px #de3f1d44; }
+      .saved { font-size: 14px; color: #aebbc0; white-space: nowrap; }
+
+      .lcd { background: var(--lcd); color: var(--ink); border: 2px solid #7f8f7c; border-radius: 4px; box-shadow: inset 0 2px 6px #0003; position: relative; }
+      .lcd svg { display: block; width: 100%; height: 100%; }
+      .plate { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; color: #47555b; margin: 0 0 6px; }
+      .key { all: unset; min-height: 48px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; background: #f1f3f3; border: 1px solid var(--edge); border-bottom-width: 4px; border-radius: 6px; font-weight: 600; text-align: center; }
+      .key.go { background: var(--body); color: #fff; border-color: #17212a; }
+
+      /* 분석대 */
+      .bench { display: grid; grid-template-columns: 232px 1fr 372px; gap: 20px; padding: 20px 24px 24px; min-height: 0; }
+      .sounds { display: flex; flex-direction: column; gap: 10px; }
+      .tag { background: #f1f3f3; border: 1px solid var(--edge); border-left: 6px solid #6d7b80; padding: 10px 12px; min-height: 64px; }
+      .tag b { display: block; font-size: 17px; }
+      .tag span { font-size: 15px; color: #47555b; }
+      .tag[aria-current] { border-left-color: var(--needle); background: #fff; }
+      .sounds .key { margin-top: auto; }
+      .scope { display: grid; grid-template-rows: auto 1fr auto 0.8fr; min-height: 0; }
+      .scope .plate + .lcd { min-height: 0; }
+      .scope .plate.second { margin-top: 14px; }
+      .meter { display: grid; grid-template-rows: auto auto 1fr auto; gap: 12px; }
+      .dial { background: #f6f7f5; border: 1px solid var(--edge); border-radius: 6px; padding: 8px 8px 0; }
+      .dial svg { display: block; width: 100%; }
+      .readout { display: grid; grid-template-columns: 1fr auto; align-items: end; padding: 12px 16px; }
+      .readout .hz { font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+      .readout .hz small { font-size: 22px; font-weight: 500; margin-left: 4px; }
+      .readout .pitch { text-align: right; font-size: 20px; font-weight: 600; line-height: 1.25; }
+      .facts { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; align-content: start; font-size: 15px; }
+      .facts dt { color: #47555b; }
+      .facts dd { margin: 0; font-weight: 600; }
+
+      /* 작곡실 */
+      .studio { display: grid; grid-template-columns: 1fr 248px; gap: 20px; padding: 18px 24px 22px; min-height: 0; }
+      .grid { display: grid; grid-template-columns: 92px repeat(16, 1fr); grid-auto-rows: 54px; gap: 5px; align-content: start; }
+      .grid .row { display: flex; flex-direction: column; justify-content: center; line-height: 1.15; font-weight: 700; }
+      .grid .row small { font-weight: 500; font-size: 13px; color: #47555b; }
+      .cell { background: #e7ebec; border: 1px solid var(--edge); border-bottom-width: 3px; border-radius: 5px; }
+      .cell.bar { margin-left: 6px; }
+      .cell.on { background: var(--brass); border-color: #6f5413; box-shadow: inset 0 0 0 3px #d9b65a; }
+      .cell.now { outline: 3px solid var(--needle); outline-offset: 1px; }
+      .chord { display: grid; place-items: center; background: var(--lcd); border: 1px solid #7f8f7c; border-radius: 5px; font-weight: 700; font-size: 19px; color: var(--ink); }
+      .count { display: grid; place-items: end center; font-size: 13px; color: #47555b; height: 22px; }
+      .side { display: flex; flex-direction: column; gap: 14px; }
+      .side .lcd { padding: 10px 14px; }
+      .side .big { font-size: 40px; font-weight: 700; line-height: 1.1; }
+      .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .pair .key[aria-pressed='true'] { background: var(--body); color: #fff; }
+    </style>
+  </head>
+  <body>
+    <div class="note">
+      <h1>시안 가. 측정 기구</h1>
+      <p>출발점은 조율기와 물리 실험실의 기구입니다. 알루미늄 패널, 액정 화면, 빨간 바늘. 과감하게 쓴 한 곳은 센트 바늘입니다. 서체는 IBM Plex Sans KR.</p>
+    </div>
+
+    <div class="frame">
+      <div class="top" id="top1"></div>
+      <div class="bench">
+        <div class="sounds">
+          <p class="plate">내 소리</p>
+          <div class="tag" aria-current="true"><b>리코더 도</b><span>523.9 Hz</span></div>
+          <div class="tag"><b>리코더 솔</b><span>784.6 Hz</span></div>
+          <div class="tag"><b>내 목소리</b><span>196.3 Hz</span></div>
+          <button class="key">소리 더 가져오기</button>
+        </div>
+        <div class="scope">
+          <p class="plate">파형 — 밝은 구간을 옮겨 분석할 곳을 고르세요</p>
+          <div class="lcd"><svg id="wave" viewBox="0 0 620 250" preserveAspectRatio="none"></svg></div>
+          <p class="plate second">배음 — 기본음의 몇 배 자리에 얼마나 센 소리가 있는지</p>
+          <div class="lcd"><svg id="spec" viewBox="0 0 620 190" preserveAspectRatio="none"></svg></div>
+        </div>
+        <div class="meter">
+          <div class="dial"><svg id="dial" viewBox="0 0 356 190"></svg></div>
+          <div class="lcd readout">
+            <div class="hz">523.9<small>Hz</small></div>
+            <div class="pitch">도5<br />+2센트</div>
+          </div>
+          <dl class="facts">
+            <dt>주기</dt><dd>1.909 ms</dd>
+            <dt>측정 신뢰도</dt><dd>높음</dd>
+            <dt>가장 센 배음</dt><dd>2배음 (기본음의 42%)</dd>
+          </dl>
+          <button class="key go">이 소리를 내 음색으로 쓰기</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="frame">
+      <div class="top" id="top2"></div>
+      <div class="studio">
+        <div>
+          <div class="grid" id="grid"></div>
+        </div>
+        <div class="side">
+          <div>
+            <p class="plate">빠르기</p>
+            <div class="lcd"><div class="big">96</div>1분에 96박</div>
+          </div>
+          <div>
+            <p class="plate">구간</p>
+            <div class="pair"><button class="key" aria-pressed="true">1~4마디</button><button class="key">5~8마디</button></div>
+          </div>
+          <div>
+            <p class="plate">음계와 음색</p>
+            <div class="lcd">순정률 장음계<br />리코더 도의 음색</div>
+          </div>
+          <button class="key go" style="margin-top: auto">처음부터 듣기</button>
+          <button class="key">방금 한 것 되돌리기</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import '@fontsource/ibm-plex-sans-kr/400.css';
+      import '@fontsource/ibm-plex-sans-kr/500.css';
+      import '@fontsource/ibm-plex-sans-kr/600.css';
+      import '@fontsource/ibm-plex-sans-kr/700.css';
+      import { $, chords, melody, playhead, scale, sound, stages, stepHz, wavePath } from './shared.ts';
+
+      const top = (current) =>
+        `<div class="work">김하늘의 작업</div><div class="range">${stages
+          .map((s) => `<button ${s === current ? 'aria-current="step"' : ''}><i></i>${s}</button>`)
+          .join('')}<button><i></i>심화</button></div><div class="saved">10시 42분에 저장됨</div>`;
+      $('top1').innerHTML = top('보기');
+      $('top2').innerHTML = top('만들기');
+
+      // 파형: 눈금, 고른 구간, 신호
+      let g = '';
+      for (let i = 1; i < 10; i++) g += `<line x1="${i * 62}" y1="0" x2="${i * 62}" y2="250" stroke="#17231b" stroke-opacity=".13"/>`;
+      for (let i = 1; i < 4; i++) g += `<line x1="0" y1="${i * 62.5}" x2="620" y2="${i * 62.5}" stroke="#17231b" stroke-opacity=".13"/>`;
+      $('wave').innerHTML =
+        g +
+        `<rect x="0" y="0" width="186" height="250" fill="#17231b" fill-opacity=".2"/><rect x="434" y="0" width="186" height="250" fill="#17231b" fill-opacity=".2"/>` +
+        `<path d="${wavePath(620, 250, 10)}" fill="none" stroke="#17231b" stroke-width="2.4" stroke-linejoin="round"/>` +
+        `<rect x="186" y="3" width="248" height="244" fill="none" stroke="#de3f1d" stroke-width="3"/>` +
+        `<rect x="174" y="95" width="24" height="60" rx="4" fill="#de3f1d"/><rect x="422" y="95" width="24" height="60" rx="4" fill="#de3f1d"/>`;
+
+      // 배음 막대
+      let s = `<line x1="0" y1="156" x2="620" y2="156" stroke="#17231b" stroke-width="2"/>`;
+      sound.harmonics.forEach((a, k) => {
+        const x = 40 + k * 72;
+        const h = a * 132;
+        s += `<rect x="${x}" y="${156 - h}" width="34" height="${h}" fill="#17231b"/><text x="${x + 17}" y="178" text-anchor="middle" font-size="15" font-weight="600" fill="#17231b">${k + 1}배</text>`;
+        if (k < 3) s += `<text x="${x + 17}" y="${148 - h}" text-anchor="middle" font-size="14" fill="#17231b">${Math.round((k + 1) * sound.f0)}</text>`;
+      });
+      $('spec').innerHTML = s;
+
+      // 센트 바늘
+      const cx = 178, cy = 176, r = 150;
+      let d = `<path d="M${cx - r} ${cy}A${r} ${r} 0 0 1 ${cx + r} ${cy}" fill="none" stroke="#162025" stroke-width="2"/>`;
+      for (let c = -50; c <= 50; c += 5) {
+        const a = (Math.PI * (c + 50)) / 100;
+        const big = c % 25 === 0;
+        const r2 = r - (big ? 20 : c % 10 === 0 ? 13 : 8);
+        const x1 = cx - r * Math.cos(a), y1 = cy - r * Math.sin(a);
+        const x2 = cx - r2 * Math.cos(a), y2 = cy - r2 * Math.sin(a);
+        d += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#162025" stroke-width="${big ? 3 : 1.5}"/>`;
+        if (big) d += `<text x="${cx - (r - 38) * Math.cos(a)}" y="${cy - (r - 38) * Math.sin(a) + 6}" text-anchor="middle" font-size="17" font-weight="600" fill="#162025">${c > 0 ? '+' : ''}${c}</text>`;
+      }
+      const na = (Math.PI * (sound.cents + 50)) / 100;
+      d += `<path d="M${cx - 96} ${cy - 58}A112 112 0 0 1 ${cx + 96} ${cy - 58}" fill="none" stroke="#a47f24" stroke-width="5" stroke-dasharray="2 9" opacity=".0"/>`;
+      d += `<line x1="${cx}" y1="${cy}" x2="${cx - (r - 6) * Math.cos(na)}" y2="${cy - (r - 6) * Math.sin(na)}" stroke="#de3f1d" stroke-width="4" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="11" fill="#2c3a41"/>`;
+      d += `<text x="${cx}" y="${cy - 34}" text-anchor="middle" font-size="14" font-weight="600" fill="#47555b">평균율과의 차이, 센트</text>`;
+      $('dial').innerHTML = d;
+
+      // 작곡 격자: 위가 높은 음
+      let html = '<div></div>';
+      for (let c = 0; c < 16; c++) html += `<div class="count" style="grid-column:${c + 2};justify-items:start">${c % 4 === 0 ? c / 4 + 1 + '마디' : ''}</div>`;
+      for (let rI = scale.steps.length - 1; rI >= 0; rI--) {
+        html += `<div class="row">${scale.steps[rI].label}<small>${stepHz(rI).toFixed(1)} Hz</small></div>`;
+        for (let c = 0; c < 16; c++)
+          html += `<div class="cell${melody[c] === rI ? ' on' : ''}${c === playhead ? ' now' : ''}${c % 4 === 0 && c ? ' bar' : ''}"></div>`;
+      }
+      html += '<div class="row">화음</div>';
+      for (let c = 0; c < 16; c++) html += `<div class="chord${c % 4 === 0 && c ? ' cell bar' : ''}" style="${c % 4 === 0 && c ? 'margin-left:6px' : ''}">${chords[c]}</div>`;
+      $('grid').innerHTML = html;
+      $('grid').querySelectorAll('.count').forEach((el) => (el.style.gridRow = '1'));
+      $('grid').style.gridTemplateRows = '22px';
+    </script>
+  </body>
+</html>
