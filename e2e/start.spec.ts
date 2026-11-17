@@ -40,9 +40,10 @@ test('작업을 만들고, 다시 열어 이어하고, 백업으로 되살린다
 
   // 단계 이동: 앞 단계를 끝내지 않아도 갈 수 있다
   await page.getByRole('link', { name: /보기/ }).click();
-  await expect(page.getByRole('heading', { name: '분석대' })).toBeVisible();
+  await page.getByRole('link', { name: /세기/ }).click();
+  await expect(page.getByRole('heading', { name: '비율 실험실' })).toBeVisible();
   await expect(page.locator('.katex').first()).toBeVisible();
-  await expect(page.getByRole('link', { name: /보기/ })).toHaveAttribute('aria-current', 'step');
+  await expect(page.getByRole('link', { name: /세기/ })).toHaveAttribute('aria-current', 'step');
 
   // 백업 저장
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: '백업 저장' }).click()]);
@@ -53,7 +54,7 @@ test('작업을 만들고, 다시 열어 이어하고, 백업으로 되살린다
 
   // 다시 열어도 그 단계가 그대로 열린다
   await page.reload();
-  await expect(page.getByRole('heading', { name: '분석대' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '비율 실험실' })).toBeVisible();
   await expect(page.getByTestId('project-name')).toHaveText('리코더 소리 탐구');
 
   // 시작 화면의 이어하기

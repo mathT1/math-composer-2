@@ -4,6 +4,7 @@
   import { router } from '../lib/route.svelte';
   import { fromBackupText } from '../store/backup';
   import { deleteProject, listProjects, saveProject } from '../store/db';
+  import { restoreClips } from '../store/sounds.svelte';
   import { createProject, filledBars, ProjectError, type Project } from '../store/project';
 
   let name = $state('');
@@ -48,13 +49,15 @@
     message = '';
     try {
       if (file.size > 20 * 1024 * 1024) throw new ProjectError('파일이 너무 큽니다. 소리의 수학에서 저장한 파일인지 확인하세요.');
-      const { project } = fromBackupText(await file.text());
+      const { project, clips } = fromBackupText(await file.text());
       // 이 기기에 같은 작업이 있으면 덮어쓰지 않고 따로 둔다
       if (projects.some((p) => p.id === project.id)) {
         project.id = crypto.randomUUID();
         project.name = `${project.name} (불러옴)`.slice(0, 40);
       }
       project.updatedAt = Date.now();
+      // 백업에는 소리마다 고른 구간만 들어 있다. 그 조각을 이 기기에 넣는다
+      await restoreClips(project, clips);
       await saveProject(project);
       await refresh();
       message = `“${project.name}” 작업을 불러왔습니다. 아래 목록에서 눌러 이어서 하세요.`;

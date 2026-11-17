@@ -6,6 +6,7 @@
   import { toBackup } from '../store/backup';
   import { fileStem, filledBars } from '../store/project';
   import { session } from '../store/session.svelte';
+  import { clipsFor } from '../store/sounds.svelte';
 
   let { stage = null }: { stage?: StageId | null } = $props();
 
@@ -18,7 +19,7 @@
     if (!project) return;
     await session.flush();
     const name = `${fileStem(project)}_백업.json`;
-    download(name, new Blob([toBackup(project)], { type: 'application/json' }));
+    download(name, new Blob([toBackup(project, await clipsFor(project))], { type: 'application/json' }));
     backedUp = `${name} 파일로 저장했습니다.`;
   }
 </script>

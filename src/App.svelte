@@ -3,6 +3,8 @@
   import { offline } from './lib/offline.svelte';
   import { router } from './lib/route.svelte';
   import Check from './screens/Check.svelte';
+  import Listen from './screens/Listen.svelte';
+  import See from './screens/See.svelte';
   import Stage from './screens/Stage.svelte';
   import Start from './screens/Start.svelte';
   import { session } from './store/session.svelte';
@@ -46,7 +48,9 @@
     <Cover stage={route.screen === 'project' ? route.stage : null} />
     <main>
       {#if route.screen === 'project'}
-        {#if session.project}<Stage stage={route.stage} />{/if}
+        {#if session.project}
+          {#if route.stage === 'listen'}<Listen />{:else if route.stage === 'see'}<See />{:else}<Stage stage={route.stage} />{/if}
+        {/if}
       {:else}
         {#if missing}
           <p class="notice gone" role="status">열려던 작업이 이 태블릿에 없습니다. 백업 파일이 있으면 아래에서 불러오세요.</p>

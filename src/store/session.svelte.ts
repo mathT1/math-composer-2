@@ -66,4 +66,6 @@ if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') void session.flush();
   });
+  // 새로 고침이나 주소 이동으로 화면이 내려갈 때
+  window.addEventListener('pagehide', () => void session.flush());
 }
