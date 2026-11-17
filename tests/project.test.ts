@@ -60,6 +60,8 @@ describe('작업 데이터 (작업지시서 6.5절)', () => {
       (p) => (p.song.bpm = 999),
       (p) => (p.scale.steps = [{ cents: 0 }]),
       (p) => (p.scale.steps[3].cents = 5),
+      (p) => (p.scale.steps[0].cents = 10),
+      (p) => (p.tables = { big: 'x'.repeat(70_000) }),
       (p) => (p.timbre.harmonics = [1]),
       (p) => (p.timbre.harmonics[2] = 'x'),
       (p) => (p.sounds = new Array(9).fill({})),

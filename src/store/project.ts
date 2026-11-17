@@ -162,6 +162,7 @@ function parseScale(v: unknown): Scale {
     }
     return step;
   });
+  if (steps[0].cents !== 0) fail('음계의 첫 음이 기준음(0센트)이 아닙니다.');
   for (let i = 1; i < steps.length; i++) {
     if (steps[i].cents <= steps[i - 1].cents) fail('음계의 음이 낮은 음부터 차례로 놓여 있지 않습니다.');
   }
@@ -187,6 +188,14 @@ function parseSound(v: unknown): Sound {
     harmonics: harmonics(v.harmonics, '소리'),
     inharmonicity: num(v.inharmonicity, '배음 어긋남', 0, 1),
   };
+}
+
+/** 계산표는 M3에서 모양을 정한다. 그때까지는 크기만 막는다(M1-A2) */
+function parseTables(v: unknown): Record<string, unknown> {
+  if (!isObj(v)) return {};
+  const text = JSON.stringify(v);
+  if (text.length > 65_536) return fail('계산표가 너무 큽니다.');
+  return JSON.parse(text) as Record<string, unknown>;
 }
 
 /**
@@ -237,7 +246,7 @@ export function parseProject(v: unknown): Project {
     timbre: { harmonics: harmonics(timbre.harmonics, '음색'), from: str(timbre.from, '음색의 출처', 64) },
     scale,
     song: { bpm: num(song.bpm, '빠르기', 60, 160), melody, chords },
-    tables: isObj(v.tables) ? (JSON.parse(JSON.stringify(v.tables)) as Record<string, unknown>) : {},
+    tables: parseTables(v.tables),
     answers,
     fit,
   };

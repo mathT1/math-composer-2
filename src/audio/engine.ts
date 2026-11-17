@@ -82,7 +82,9 @@ export class Engine {
   #ctx: AudioContext | null = null;
   #out: GainNode | null = null;
   #timer: ReturnType<typeof setInterval> | null = null;
-  #live = new Set<OscillatorNode>();
+  #live = new Set<AudioScheduledSourceNode>();
+  /** 지금 울리는 소리들이 지나는 길. 멈출 때 이 길의 음량을 짧게 줄인 뒤 끈다 */
+  #bus: GainNode | null = null;
 
   get context(): AudioContext {
     if (!this.#ctx) {
@@ -92,9 +94,39 @@ export class Engine {
     return this.#ctx;
   }
 
+  /** 소리를 넣는 곳 */
   get output(): GainNode {
-    void this.context;
-    return this.#out!;
+    const ctx = this.context;
+    if (!this.#bus) {
+      this.#bus = ctx.createGain();
+      this.#bus.connect(this.#out!);
+    }
+    return this.#bus;
+  }
+
+  /** 녹음한 소리의 한 구간을 낸다. 끝나면 onEnd */
+  playBuffer(pcm: Float32Array, sampleRate: number, start = 0, end = pcm.length, onEnd?: () => void): void {
+    this.stop();
+    const ctx = this.context;
+    const n = Math.max(1, end - start);
+    const buf = ctx.createBuffer(1, n, sampleRate);
+    buf.getChannelData(0).set(pcm.subarray(start, start + n));
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const env = ctx.createGain();
+    const t = ctx.currentTime + 0.01;
+    const dur = n / sampleRate;
+    env.gain.setValueAtTime(0, t);
+    env.gain.linearRampToValueAtTime(1, t + 0.01);
+    env.gain.setValueAtTime(1, t + Math.max(0.01, dur - 0.02));
+    env.gain.linearRampToValueAtTime(0, t + dur);
+    src.connect(env).connect(this.output);
+    src.start(t);
+    this.#track(src);
+    src.addEventListener('ended', () => {
+      env.disconnect();
+      onEnd?.();
+    });
   }
 
   get now(): number {
@@ -143,7 +175,10 @@ export class Engine {
         shown = at;
         onStep(at);
       }
-      if (c.exhausted && ctx.currentTime >= c.endTime) this.stop();
+      if (c.exhausted && ctx.currentTime >= c.endTime) {
+        this.stop();
+        if (shown !== null) onStep(null);
+      }
     };
     this.#timer = setInterval(tick, 25);
     tick();
@@ -158,17 +193,28 @@ export class Engine {
   stop(): void {
     if (this.#timer) clearInterval(this.#timer);
     this.#timer = null;
-    for (const osc of this.#live) {
-      try {
-        osc.stop();
-      } catch {
-        // 이미 멈춘 소리
-      }
-    }
+    const bus = this.#bus;
+    const live = [...this.#live];
     this.#live.clear();
+    this.#bus = null;
+    if (!bus || !this.#ctx) return;
+    // 바로 끊으면 딱 소리가 난다. 15ms 동안 줄인 뒤 끈다
+    const t = this.#ctx.currentTime;
+    bus.gain.setValueAtTime(bus.gain.value, t);
+    bus.gain.linearRampToValueAtTime(0, t + 0.015);
+    setTimeout(() => {
+      for (const node of live) {
+        try {
+          node.stop();
+        } catch {
+          // 이미 멈춘 소리
+        }
+      }
+      bus.disconnect();
+    }, 40);
   }
 
-  #track(osc: OscillatorNode): void {
+  #track(osc: AudioScheduledSourceNode): void {
     this.#live.add(osc);
     osc.addEventListener('ended', () => this.#live.delete(osc));
   }

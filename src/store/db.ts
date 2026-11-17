@@ -72,24 +72,27 @@ export function saveProject(project: Project): Promise<void> {
   return run<void>('projects', 'readwrite', (s) => void s.put(plain));
 }
 
+/** 소리는 작업마다 따로 둔다. 같은 백업을 두 번 불러와도 서로의 소리를 지우지 않는다(M1-A1) */
+const pcmKey = (projectId: string, soundId: string) => `${projectId}:${soundId}`;
+
 export async function deleteProject(project: Project): Promise<void> {
   await run<void>('pcm', 'readwrite', (s) => {
-    for (const sound of project.sounds) s.delete(sound.id);
+    for (const sound of project.sounds) s.delete(pcmKey(project.id, sound.id));
   });
   await run<void>('projects', 'readwrite', (s) => void s.delete(project.id));
 }
 
-export function savePcm(soundId: string, pcm: Float32Array): Promise<void> {
-  return run<void>('pcm', 'readwrite', (s) => void s.put(pcm, soundId));
+export function savePcm(projectId: string, soundId: string, pcm: Float32Array): Promise<void> {
+  return run<void>('pcm', 'readwrite', (s) => void s.put(pcm, pcmKey(projectId, soundId)));
 }
 
-export async function loadPcm(soundId: string): Promise<Float32Array | null> {
-  const v = await run<unknown>('pcm', 'readonly', (s) => s.get(soundId));
+export async function loadPcm(projectId: string, soundId: string): Promise<Float32Array | null> {
+  const v = await run<unknown>('pcm', 'readonly', (s) => s.get(pcmKey(projectId, soundId)));
   return v instanceof Float32Array ? v : null;
 }
 
-export function deletePcm(soundId: string): Promise<void> {
-  return run<void>('pcm', 'readwrite', (s) => void s.delete(soundId));
+export function deletePcm(projectId: string, soundId: string): Promise<void> {
+  return run<void>('pcm', 'readwrite', (s) => void s.delete(pcmKey(projectId, soundId)));
 }
 
 /** 브라우저가 공간이 모자랄 때 작업을 지우지 않도록 요청한다. 받아들여졌는지 돌려준다 */
