@@ -5,6 +5,7 @@
   import Build from './screens/Build.svelte';
   import Check from './screens/Check.svelte';
   import Count from './screens/Count.svelte';
+  import Make from './screens/Make.svelte';
   import Listen from './screens/Listen.svelte';
   import See from './screens/See.svelte';
   import Stage from './screens/Stage.svelte';
@@ -48,10 +49,10 @@
 {:else}
   <div class="book">
     <Cover stage={route.screen === 'project' ? route.stage : null} />
-    <main>
+    <main class:wide={route.screen === 'project' && route.stage === 'make'}>
       {#if route.screen === 'project'}
         {#if session.project}
-          {#if route.stage === 'listen'}<Listen />{:else if route.stage === 'see'}<See />{:else if route.stage === 'count'}<Count />{:else if route.stage === 'build'}<Build />{:else}<Stage stage={route.stage} />{/if}
+          {#if route.stage === 'listen'}<Listen />{:else if route.stage === 'see'}<See />{:else if route.stage === 'count'}<Count />{:else if route.stage === 'build'}<Build />{:else if route.stage === 'make'}<Make />{:else}<Stage stage={route.stage} />{/if}
         {/if}
       {:else}
         {#if missing}
@@ -74,6 +75,11 @@
     min-width: 0;
     overflow-y: auto;
     padding: 26px 34px 26px 38px;
+  }
+  @media (min-width: 900px) {
+    main.wide {
+      padding: 20px 24px;
+    }
   }
   .gone {
     margin-bottom: 26px;

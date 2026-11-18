@@ -12,6 +12,8 @@
 
   const project = $derived(session.project);
   const open = $derived(stage !== null && project !== null);
+  /** 작곡할 때는 격자에 자리를 내주려고 표지가 책등으로 접힌다(가로 화면) */
+  const spine = $derived(stage === 'make');
 
   let backedUp = $state('');
 
@@ -24,10 +26,10 @@
   }
 </script>
 
-<header class="cover" class:open>
+<header class="cover" class:open class:spine>
   {#if open && project}
     <div class="title">
-      <a class="home" href="#/" aria-label="작업 목록으로 돌아가기">소리의 <br />수학</a>
+      <a class="home" href="#/" aria-label="작업 목록으로 돌아가기"><span class="full">소리의 <br />수학</span><span class="short" aria-hidden="true">목록</span></a>
       <p class="by" data-testid="project-name">{project.name}</p>
     </div>
 
@@ -36,7 +38,7 @@
         {#each STAGES as s, i}
           <li class:extra={s.id === 'more'}>
             <a href={hrefFor({ screen: 'project', id: project.id, stage: s.id })} aria-current={s.id === stage ? 'step' : undefined}>
-              <span class="n">{s.id === 'more' ? '+' : i + 1}</span>{s.name}
+              <span class="n">{s.id === 'more' ? '+' : i + 1}</span><span class="name">{s.name}</span>
             </a>
           </li>
         {/each}
@@ -50,7 +52,7 @@
       <p class="saved" data-testid="saved">
         {#if session.saveError}{session.saveError}{:else if session.savedAt}{when(session.savedAt)}에 저장됨{/if}
       </p>
-      <button class="btn onCover" onclick={saveBackup}>백업 저장</button>
+      <button class="btn onCover" onclick={saveBackup} aria-label="백업 저장"><span class="full">백업 저장</span><span class="short" aria-hidden="true">백업</span></button>
       {#if backedUp}<p class="saved" role="status">{backedUp}</p>{/if}
       {#if session.protected_ === false}
         <p class="saved roomy">수업이 끝나면 백업을 저장하세요. 이 태블릿은 공간이 모자라면 작업을 지울 수 있습니다.</p>
@@ -78,6 +80,9 @@
 </header>
 
 <style>
+  .short {
+    display: none;
+  }
   .cover {
     background: var(--cover);
     color: #fff;
@@ -283,6 +288,55 @@
       justify-content: center;
       gap: 8px;
       min-height: 52px;
+    }
+  }
+
+  /* 책등: 가로 화면의 작곡실 */
+  @media (min-width: 900px) {
+    .cover.open.spine {
+      flex-basis: 76px;
+      padding: 18px 0 14px;
+      align-items: stretch;
+    }
+    .spine .full,
+    .spine .by,
+    .spine .name,
+    .spine .state,
+    .spine .saved {
+      display: none;
+    }
+    .spine .short {
+      display: inline;
+    }
+    .spine .home {
+      font-size: 16px;
+      text-align: center;
+      min-height: var(--tap);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .spine nav {
+      margin-top: 10px;
+    }
+    .spine li a {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      margin: 0;
+      padding: 0;
+    }
+    .spine li .n {
+      font-size: 20px;
+      opacity: 1;
+    }
+    .spine .foot {
+      justify-items: center;
+      padding: 12px 6px 0;
+    }
+    .spine .btn.onCover {
+      justify-self: center;
+      padding: 0 10px;
+      font-size: 15px;
     }
   }
 </style>

@@ -150,7 +150,8 @@ export class Engine {
    */
   run(
     clock: (startTime: number) => StepClock,
-    notesAt: (step: number) => { harmonics: readonly number[]; freq: number; gain?: number }[],
+    /** steps: 몇 칸 동안 울릴지(화음을 이어 낼 때). 생략하면 한 칸 */
+    notesAt: (step: number) => { harmonics: readonly number[]; freq: number; gain?: number; steps?: number }[],
     onStep: (step: number | null) => void,
   ): () => void {
     this.stop();
@@ -164,7 +165,7 @@ export class Engine {
             scheduleNote(ctx, this.output, waveFor(ctx, n.harmonics, n.freq), {
               freq: n.freq,
               start: time,
-              duration: c.stepSeconds * 0.95,
+              duration: c.stepSeconds * (n.steps ?? 1) * 0.95,
               gain: n.gain,
             }),
           );
