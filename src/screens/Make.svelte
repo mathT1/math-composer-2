@@ -202,7 +202,13 @@
       <h2>작곡실</h2>
       <p class="sub">{scale.name}, 음색은 {timbreName}. 칸을 누르면 음이 놓이고, 한 번 더 누르면 지워집니다.</p>
     </div>
+    <div class="acts right">
+      <button class="btn" onclick={undo} disabled={history.length === 0}>되돌리기</button>
+      <button class="btn" onclick={saveWav} disabled={!hasNotes || saving}>{saving ? '만드는 중' : '곡 저장 (WAV)'}</button>
+    </div>
   </header>
+
+  {#if message}<p class="notice" role="status" data-testid="message">{message}</p>{/if}
 
   <div class="bar">
     <div class="seg" role="tablist" aria-label="구간">
@@ -212,6 +218,13 @@
     <button class="btn ink" onclick={() => play('all')}>{playing === 'all' ? '멈추기' : '처음부터 듣기'}</button>
     <button class="btn" onclick={() => play('section')}>{playing === 'section' ? '멈추기' : '이 구간 듣기'}</button>
     <button class="btn toggle" aria-pressed={loop} onclick={() => (loop = !loop)}>구간 반복</button>
+    <div class="tempo" role="group" aria-label="빠르기">
+      <span>빠르기</span>
+      <button class="step" onclick={() => setBpm(song.bpm - 4)} disabled={song.bpm <= 60} aria-label="느리게">−</button>
+      <b data-testid="bpm" aria-live="polite">{song.bpm}</b>
+      <button class="step" onclick={() => setBpm(song.bpm + 4)} disabled={song.bpm >= 160} aria-label="빠르게">+</button>
+      <small>1분에 {song.bpm}박</small>
+    </div>
   </div>
 
   <div class="scroller" bind:this={scroller} data-testid="grid">
@@ -257,7 +270,7 @@
   </div>
 
   {#if chordAt !== null}
-    <section class="drawer" aria-labelledby="chord-title" data-testid="chord-editor">
+    <section class="drawer" aria-labelledby="chord-title" data-testid="chord-editor" {@attach (el) => el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })}>
       <div class="drawer-head">
         <h3 id="chord-title">{Math.floor(chordAt / 4) + 1}마디 {(chordAt % 4) + 1}박의 화음</h3>
         <button class="btn" onclick={() => (chordAt = null)}>닫기</button>
@@ -292,26 +305,16 @@
   {/if}
 
   <div class="settings">
-    <label class="tempo">
-      <span>빠르기 <b data-testid="bpm">{song.bpm}</b> <small>(1분에 {song.bpm}박)</small></span>
-      <input class="slider" type="range" min="60" max="160" step="1" value={song.bpm} onchange={(e) => setBpm(+e.currentTarget.value)} data-testid="bpm-slider" />
-    </label>
-    <div>
-      <p class="cap">음색</p>
-      <div class="chips" role="group" aria-label="음색">
-        {#each timbres as t (t.id)}
-          <button class="chip" aria-pressed={project.timbre.from === t.id} onclick={() => setTimbre(t)}>{t.label}</button>
-        {/each}
-      </div>
+    <p class="cap">음색</p>
+    <div class="chips" role="group" aria-label="음색">
+      {#each timbres as t (t.id)}
+        <button class="chip" aria-pressed={project.timbre.from === t.id} onclick={() => setTimbre(t)}>{t.label}</button>
+      {/each}
     </div>
   </div>
 
-  {#if message}<p class="notice" role="status" data-testid="message">{message}</p>{/if}
-
   <p class="acts foot">
-    <button class="btn" onclick={undo} disabled={history.length === 0}>방금 한 것 되돌리기</button>
     <button class="btn" onclick={clearSection}>이 구간 지우기</button>
-    <button class="btn" onclick={saveWav} disabled={!hasNotes || saving}>{saving ? '곡 파일을 만드는 중' : '곡 저장 (WAV)'}</button>
     {#if !hasNotes}<span class="hint">음을 하나 넘게 놓으면 곡을 저장할 수 있습니다.</span>{/if}
   </p>
 </article>
@@ -359,8 +362,8 @@
   /* ── 격자: 행마다 가운데 줄 하나, 4칸마다 굵은 마디줄, 켠 음은 음표 머리 ── */
   .scroller {
     overflow: auto;
-    max-height: max(330px, calc(100dvh - 250px));
-    overscroll-behavior: contain;
+    /* 격자 끝까지 밀면 화면 전체가 이어서 내려가도록 막지 않는다 */
+    max-height: max(300px, calc(100dvh - 270px));
     border-bottom: 1px solid var(--rule);
   }
   .system {
@@ -540,48 +543,45 @@
     padding: 0 12px;
   }
 
-  .settings {
-    display: grid;
-    grid-template-columns: minmax(220px, 320px) 1fr;
-    gap: 12px 30px;
-    align-items: start;
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 10px 20px;
   }
   .tempo {
-    display: grid;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
   .tempo b {
     font-size: 24px;
     font-weight: 800;
+    min-width: 2.2em;
+    text-align: center;
   }
   .tempo small {
     font-size: 14px;
     color: var(--ink-soft);
   }
-  .slider {
+  .step {
     appearance: none;
-    width: 100%;
+    width: var(--tap);
     height: var(--tap);
-    margin: 0;
-    background: linear-gradient(var(--staff), var(--staff)) center / 100% 2px no-repeat;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
     cursor: pointer;
   }
-  .slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 30px;
-    height: 22px;
-    border-radius: 50%;
-    background: var(--ink);
-    transform: rotate(-20deg);
+  .step:disabled {
+    opacity: 0.4;
   }
-  .slider::-moz-range-thumb {
-    width: 30px;
-    height: 22px;
-    border: 0;
-    border-radius: 50%;
-    background: var(--ink);
-    transform: rotate(-20deg);
-  }
-
   .seg {
     display: inline-grid;
     grid-auto-flow: column;
@@ -606,9 +606,5 @@
     color: #fff;
   }
 
-  @media (max-width: 700px) {
-    .settings {
-      grid-template-columns: 1fr;
-    }
-  }
+
 </style>

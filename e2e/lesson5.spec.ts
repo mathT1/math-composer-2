@@ -49,7 +49,7 @@ test('5차시: 내 음계와 음색으로 8마디를 짓고, 듣고, WAV로 저�
   await expect(cell(1, 4, '높은 도')).toHaveAttribute('aria-pressed', 'false');
   await cell(1, 4, '시').click(); // 한 번 더 누르면 지워진다
   await expect(cell(1, 4, '시')).toHaveAttribute('aria-pressed', 'false');
-  await page.getByRole('button', { name: '방금 한 것 되돌리기' }).click();
+  await page.getByRole('button', { name: '되돌리기' }).click();
   await expect(cell(1, 4, '시')).toHaveAttribute('aria-pressed', 'true');
 
   // 화음: I 프리셋, 주파수 비 4 : 5 : 6, 마디 네 칸에
@@ -69,7 +69,13 @@ test('5차시: 내 음계와 음색으로 8마디를 짓고, 듣고, WAV로 저�
   await cell(8, 1, '높은 도').click();
   await expect(page.getByTestId('state')).toContainText('곡 2/8마디');
   await page.getByRole('tab', { name: '1~4마디' }).click();
+  await page.locator('main').evaluate((m) => m.scrollTo(0, 0));
   await page.screenshot({ path: 'test-results/m4-make-landscape.png' });
+  // 저장 단추와 빠르기는 화면을 내리지 않아도 보인다
+  for (const name of ['곡 저장 (WAV)', '빠르게', '되돌리기']) {
+    const b = (await page.getByRole('button', { name }).boundingBox())!;
+    expect(b.y + b.height, name).toBeLessThanOrEqual(700);
+  }
 
   // 재생: 재생 위치 표식이 움직이고 멈춘다
   await page.getByRole('button', { name: '처음부터 듣기' }).click();
@@ -80,8 +86,7 @@ test('5차시: 내 음계와 음색으로 8마디를 짓고, 듣고, WAV로 저�
   await expect(page.locator('.head-mark')).toHaveCount(0);
 
   // 빠르기 120, 음색 바꾸기
-  await page.getByTestId('bpm-slider').fill('120');
-  await page.getByTestId('bpm-slider').dispatchEvent('change');
+  for (let i = 0; i < 6; i++) await page.getByRole('button', { name: '빠르게' }).click();
   await expect(page.getByTestId('bpm')).toHaveText('120');
   await page.getByRole('button', { name: '날카로운' }).click();
   await expect(page.getByText('음색은 날카로운')).toBeVisible();
@@ -119,8 +124,9 @@ test('구간 반복과 이 구간 지우기', async ({ page }) => {
   const grid = page.getByTestId('grid');
   await grid.getByRole('button', { name: '1마디 1박 도', exact: true }).click();
   await grid.getByRole('button', { name: '4마디 4박 솔', exact: true }).click();
-  await page.getByTestId('bpm-slider').fill('160');
-  await page.getByTestId('bpm-slider').dispatchEvent('change');
+  for (let i = 0; i < 16; i++) await page.getByRole('button', { name: '빠르게' }).click(); // 96 + 16 × 4 = 160
+  await expect(page.getByTestId('bpm')).toHaveText('160');
+  await expect(page.getByRole('button', { name: '빠르게' })).toBeDisabled();
   await page.getByRole('button', { name: '구간 반복' }).click();
   await page.getByRole('button', { name: '이 구간 듣기' }).click();
   // 16박 = 6초 뒤에도 계속 재생 중
@@ -132,7 +138,7 @@ test('구간 반복과 이 구간 지우기', async ({ page }) => {
   await page.getByRole('button', { name: '이 구간 지우기' }).click();
   await expect(grid.getByRole('button', { name: '1마디 1박 도', exact: true })).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByRole('button', { name: '곡 저장 (WAV)' })).toBeDisabled();
-  await page.getByRole('button', { name: '방금 한 것 되돌리기' }).click();
+  await page.getByRole('button', { name: '되돌리기' }).click();
   await expect(grid.getByRole('button', { name: '1마디 1박 도', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 

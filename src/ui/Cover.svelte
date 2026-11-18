@@ -300,13 +300,21 @@
     }
     .spine .full,
     .spine .by,
-    .spine .name,
     .spine .state,
     .spine .saved {
       display: none;
     }
     .spine .short {
       display: inline;
+    }
+    /* 단계 이름은 보이지 않게만 하고 화면 읽기 프로그램에는 남긴다 */
+    .spine .name {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
     .spine .home {
       font-size: 16px;
