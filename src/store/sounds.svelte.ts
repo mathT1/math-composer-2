@@ -1,7 +1,7 @@
 /**
  * 작업에 든 소리: 더하기, 지우기, 구간 바꾸기, 다시 재기. 소리 자체(PCM)는 기기 저장소에 따로 둔다.
  */
-import { resample } from '../audio/recorder';
+import { MAX_SECONDS, resample } from '../audio/recorder';
 import { bestRegion, MAX_SELECTION, MIN_SELECTION, measure, type Measured, type Selection } from '../dsp/analyze';
 import type { Backup } from './backup';
 import { deletePcm, loadPcm, savePcm } from './db';
@@ -132,6 +132,8 @@ export async function restoreClips(project: Project, clips: Backup['clips']): Pr
     }
     const pcm16 = new Int16Array(bytes.buffer, 0, Math.floor(bytes.length / 2));
     if (pcm16.length < 64 || !(clip.sampleRate >= 8000 && clip.sampleRate <= 192000)) continue;
+    // 고른 구간은 2초를 넘지 않는다. 그보다 훨씬 긴 조각은 만든 파일이 아니다 (M2-A5)
+    if (pcm16.length > clip.sampleRate * MAX_SECONDS) continue;
     const pcm = new Float32Array(pcm16.length);
     for (let i = 0; i < pcm.length; i++) pcm[i] = pcm16[i] / 32767;
     s.sampleRate = clip.sampleRate;
@@ -140,6 +142,9 @@ export async function restoreClips(project: Project, clips: Backup['clips']): Pr
     await savePcm(project.id, s.id, pcm);
     cache.set(key(project.id, s.id), pcm);
     kept.push(s);
+  }
+  if (project.timbre.from && project.sounds.some((s) => s.id === project.timbre.from) && !kept.some((s) => s.id === project.timbre.from)) {
+    project.timbre.from = `${project.timbre.from} (지운 소리)`.slice(0, 64);
   }
   project.sounds = kept;
 }

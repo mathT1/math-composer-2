@@ -71,6 +71,8 @@ export class Recorder {
   #limit = 0;
   #done: ((r: Recording) => void) | null = null;
   #ctx: AudioContext | null = null;
+  /** 녹음을 시작할 때마다 하나씩 는다. 기다리는 사이 stop()이 불리면 번호가 달라져 나머지를 하지 않는다 (M2-A3) */
+  #ticket = 0;
 
   /**
    * 녹음을 시작한다. onLevel은 들어오는 소리의 크기(0~1 봉우리)와 지난 시간을 알린다.
@@ -82,6 +84,8 @@ export class Recorder {
     onReady: (info: MicInfo) => void,
   ): Promise<Recording> {
     if (!navigator.mediaDevices?.getUserMedia) throw new MicError('missing', '이 브라우저에서는 녹음할 수 없습니다.');
+    const ticket = ++this.#ticket;
+    const cancelled = () => ticket !== this.#ticket;
     let switched = false;
     try {
       this.#stream = await navigator.mediaDevices.getUserMedia(constraints());
@@ -89,7 +93,7 @@ export class Recorder {
       // 장치 이름은 마이크 권한을 받은 뒤에야 보인다
       const inputs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput');
       const builtIn = chooseBuiltIn(inputs, first.getSettings().deviceId);
-      if (builtIn) {
+      if (builtIn && !cancelled()) {
         this.#release();
         this.#stream = await navigator.mediaDevices.getUserMedia(constraints(builtIn));
         switched = true;
@@ -102,6 +106,10 @@ export class Recorder {
       throw new MicError('other', `마이크를 켜지 못했습니다(${name ?? '알 수 없는 오류'}).`);
     }
 
+    if (cancelled() || !this.#stream) {
+      this.#release();
+      throw new MicError('other', '녹음을 그만두었습니다.');
+    }
     const track = this.#stream.getAudioTracks()[0];
     const s = track.getSettings();
     onReady({
@@ -113,17 +121,27 @@ export class Recorder {
       switched,
     });
 
-    await ctx.audioWorklet.addModule(`${import.meta.env.BASE_URL}worklets/recorder.js`);
-    this.#ctx = ctx;
-    this.#chunks = [];
-    this.#length = 0;
-    this.#limit = Math.round(MAX_SECONDS * ctx.sampleRate);
-    this.#source = ctx.createMediaStreamSource(this.#stream);
-    this.#node = new AudioWorkletNode(ctx, 'recorder');
-    // 녹음하는 소리는 스피커로 내보내지 않는다
-    const silent = ctx.createGain();
-    silent.gain.value = 0;
-    this.#source.connect(this.#node).connect(silent).connect(ctx.destination);
+    try {
+      await ctx.audioWorklet.addModule(`${import.meta.env.BASE_URL}worklets/recorder.js`);
+      if (cancelled() || !this.#stream) throw new Error('cancelled');
+      this.#ctx = ctx;
+      this.#chunks = [];
+      this.#length = 0;
+      this.#limit = Math.round(MAX_SECONDS * ctx.sampleRate);
+      this.#source = ctx.createMediaStreamSource(this.#stream);
+      this.#node = new AudioWorkletNode(ctx, 'recorder');
+      // 녹음하는 소리는 스피커로 내보내지 않는다
+      const silent = ctx.createGain();
+      silent.gain.value = 0;
+      this.#source.connect(this.#node).connect(silent).connect(ctx.destination);
+    } catch {
+      this.#source?.disconnect();
+      this.#node?.disconnect();
+      this.#source = null;
+      this.#node = null;
+      this.#release();
+      throw new MicError('other', cancelled() ? '녹음을 그만두었습니다.' : '녹음 장치를 준비하지 못했습니다.');
+    }
 
     return new Promise<Recording>((resolve) => {
       this.#done = resolve;
@@ -146,6 +164,7 @@ export class Recorder {
 
   /** 녹음을 끝내고 마이크를 놓는다 */
   stop(): void {
+    this.#ticket++;
     const done = this.#done;
     this.#done = null;
     const rate = this.#ctx?.sampleRate ?? 48000;

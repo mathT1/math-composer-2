@@ -82,6 +82,7 @@
     const s = await addSound(label, source, pcm, rate);
     if (!s) message = `소리는 ${MAX_SOUNDS}개까지 담을 수 있습니다. 쓰지 않는 소리를 지운 뒤 다시 하세요.`;
     else if (s.f0 === null) message = `“${s.label}”을(를) 담았지만 음높이를 찾지 못했습니다. 한 음을 길게 낸 소리로 다시 해 보세요.`;
+    else if (source === 'sample') message = `“${s.label}”을(를) 내 소리에 담았습니다. ${s.f0.toFixed(1)} Hz`;
   }
 
   // ── 예시음 ──
@@ -232,6 +233,7 @@
           <li>
             <div class="what"><b>{s.label}</b><span>{s.about}</span></div>
             <button class="btn" onclick={() => hearSample(s.id)}>{playing === s.id ? '멈추기' : '듣기'}</button>
+            {#if project.sounds.some((x) => x.source === 'sample' && x.label === s.label)}<span class="taken">담음</span>{/if}
             <button class="btn" onclick={() => takeSample(s.id, s.label)} disabled={busy || full} aria-label="{s.label} 담기">담기</button>
           </li>
         {/each}
@@ -408,6 +410,10 @@
   }
   .ask {
     flex: 1;
+    font-weight: 700;
+  }
+  .taken {
+    font-size: 15px;
     font-weight: 700;
   }
 

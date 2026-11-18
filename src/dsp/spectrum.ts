@@ -108,10 +108,12 @@ export function extractHarmonics(spec: Spectrum, f0: number): Harmonics {
     devSum += amp * Math.abs(freq / target - 1);
     devWeight += amp;
   }
-  const first = amps[0] > 0 ? amps[0] : Math.max(...amps, 1e-12);
+  // 기본음이 가장 센 배음의 1%도 안 되면 그 1%를 기준으로 삼는다. 100에서 잘려 비율이 뭉개지지 않게 (M2-A2)
+  const maxAmp = Math.max(...amps, 1e-12);
+  const first = Math.max(amps[0], maxAmp / 100);
   const harmonics = amps.map((a) => Math.min(100, Math.max(0, a / first)));
   let strongest = 1;
-  for (let k = 1; k < harmonics.length; k++) if (harmonics[k] > harmonics[strongest - 1]) strongest = k + 1;
+  for (let k = 1; k < amps.length; k++) if (amps[k] > amps[strongest - 1]) strongest = k + 1;
   return { harmonics, inharmonicity: devWeight > 0 ? devSum / devWeight : 0, strongest };
 }
 

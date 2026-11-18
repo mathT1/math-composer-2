@@ -185,13 +185,14 @@
   });
   const overlap = $derived.by(() => {
     if (!seg || !model) return 0;
-    let err = 0;
+    // 2·Σxy ÷ (Σx² + Σy²): 똑같으면 100, 위상이 60° 어긋나면 50, 90° 넘게 어긋나면 0 (M2-A1)
+    let dot = 0;
     let pow = 0;
     for (let i = 0; i < seg.length; i++) {
-      err += (seg[i] - model[i]) ** 2;
-      pow += seg[i] ** 2;
+      dot += seg[i] * model[i];
+      pow += seg[i] ** 2 + model[i] ** 2;
     }
-    return Math.max(0, Math.round((1 - Math.sqrt(err / Math.max(pow, 1e-9))) * 100));
+    return Math.max(0, Math.round(((2 * dot) / Math.max(pow, 1e-9)) * 100));
   });
   const fitTex = $derived(`y = ${A.toFixed(2)}\\sin(2\\pi \\times ${f.toFixed(1)}\\, t + ${phi.toFixed(2)})`);
 

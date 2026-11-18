@@ -163,3 +163,12 @@ describe('내장 예시음', () => {
     expect(Math.abs(cents(2 ** (4 / 12), f0('piano-e').f0! / f0('piano-c').f0!))).toBeLessThan(8);
   });
 });
+
+describe('M2 검토 반영', () => {
+  it('기본음이 아주 약해도 배음 사이의 비와 가장 센 배음을 지킨다 (M2-A2)', () => {
+    const h = extractHarmonics(spectrum(tone(220, [0.001, 0.3, 0.8]), SR), 220);
+    expect(h.strongest).toBe(3);
+    expect(h.harmonics[2]).toBeCloseTo(100, 0);
+    expect(h.harmonics[1] / h.harmonics[2]).toBeCloseTo(0.3 / 0.8, 1);
+  });
+});

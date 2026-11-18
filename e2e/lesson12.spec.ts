@@ -65,6 +65,16 @@ test('예시음만으로 1~2차시를 끝낸다 (원칙 5)', async ({ page, base
   await page.getByTestId('fit-f').scrollIntoViewIfNeeded();
   await page.screenshot({ path: 'test-results/m2-fit-landscape.png' });
   expect(before).toBeLessThan(60);
+  // 시작 위치 φ를 돌려 보면 어딘가에서 겹친 정도가 뚜렷하게 오른다 (M2-A1)
+  let best = 0;
+  const phiSlider = page.getByRole('slider', { name: /시작 위치/ });
+  for (let p = 0; p <= 6.2; p += 0.2) {
+    await phiSlider.fill(p.toFixed(2));
+    best = Math.max(best, parseInt((await page.getByTestId('overlap').textContent())!));
+  }
+  // 높이 A와 나머지 배음까지 맞추기 전이라 100에는 못 미친다. 고치기 전에는 여기서 0%였다
+  expect(best).toBeGreaterThan(50);
+  expect(best).toBeGreaterThan(before + 20);
 
   // 내 음색으로 쓰기
   await page.getByRole('button', { name: '이 소리를 내 음색으로 쓰기' }).click();
