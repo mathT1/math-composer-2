@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { StepClock } from '../src/audio/clock';
+import { chooseBuiltIn, looksWireless } from '../src/audio/recorder';
 import { audibleHarmonics, lowBoost, waveCoefficients } from '../src/audio/timbre';
 
 describe('재생 시계 (작업지시서 6.4절)', () => {
@@ -70,5 +71,37 @@ describe('음색', () => {
 
   it('샘플레이트의 절반을 넘는 배음을 뺀다', () => {
     expect(audibleHarmonics([1, 1, 1, 1], 7000, 48000)).toEqual([1, 1, 1, 0]);
+  });
+});
+
+describe('녹음할 마이크 고르기 (6.2절)', () => {
+  // 탭 S7에 블루투스 이어폰을 연결했을 때의 실제 목록(2026-11-18)
+  const tabS7 = [
+    { deviceId: 'default', label: '기본값' },
+    { deviceId: 'b6a7ac23', label: 'Speakerphone' },
+    { deviceId: '780ace95', label: 'Bluetooth headset' },
+  ];
+
+  it('이어폰이 있으면 기본값 대신 본체 마이크를 고른다', () => {
+    expect(chooseBuiltIn(tabS7, 'default')).toBe('b6a7ac23');
+    expect(chooseBuiltIn(tabS7, '780ace95')).toBe('b6a7ac23');
+  });
+
+  it('이미 본체 마이크면 바꾸지 않는다', () => {
+    expect(chooseBuiltIn(tabS7, 'b6a7ac23')).toBeNull();
+  });
+
+  it('이어폰이 없으면 바꾸지 않는다', () => {
+    expect(chooseBuiltIn([tabS7[0], tabS7[1]], 'default')).toBeNull();
+    expect(chooseBuiltIn([tabS7[0]], 'default')).toBeNull();
+  });
+
+  it('본체 마이크가 없으면 바꾸지 않는다', () => {
+    expect(chooseBuiltIn([tabS7[0], tabS7[2]], 'default')).toBeNull();
+  });
+
+  it('이어폰 이름을 알아본다', () => {
+    for (const n of ['Bluetooth headset', 'Galaxy Buds2 Pro', 'AirPods Pro', 'Hands-Free', '헤드셋']) expect(looksWireless(n), n).toBe(true);
+    for (const n of ['기본값', 'Speakerphone', 'Microphone (Realtek)', 'Headphones jack']) expect(looksWireless(n), n).toBe(false);
   });
 });

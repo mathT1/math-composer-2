@@ -34,6 +34,24 @@ export function looksWireless(label: string): boolean {
   return /bluetooth|블루투스|hands-?free|headset|헤드셋|buds|버즈|airpods|earbuds|\bsco\b/i.test(label);
 }
 
+export interface InputDevice {
+  deviceId: string;
+  label: string;
+}
+
+/**
+ * 블루투스 이어폰이 연결돼 있으면 본체 마이크를 골라 그 번호를 돌려준다. 바꿀 필요가 없으면 null.
+ * 탭 S7(안드로이드 크롬)은 이어폰이 연결돼도 기본 마이크 이름을 “기본값”으로만 주므로,
+ * 지금 쓰는 마이크의 이름이 아니라 장치 목록에 이어폰이 있는지로 판단한다(2026-11-18 실기기 점검).
+ */
+export function chooseBuiltIn(inputs: InputDevice[], currentId: string | undefined): string | null {
+  if (!inputs.some((d) => looksWireless(d.label))) return null;
+  const candidates = inputs.filter((d) => d.deviceId !== 'default' && d.deviceId !== 'communications' && d.label && !looksWireless(d.label));
+  const builtIn = candidates.find((d) => /speaker|built-?in|internal|내장|본체|스피커/i.test(d.label)) ?? candidates[0];
+  if (!builtIn || builtIn.deviceId === currentId) return null;
+  return builtIn.deviceId;
+}
+
 const constraints = (deviceId?: string): MediaStreamConstraints => ({
   audio: {
     echoCancellation: false,
@@ -68,14 +86,13 @@ export class Recorder {
     try {
       this.#stream = await navigator.mediaDevices.getUserMedia(constraints());
       const first = this.#stream.getAudioTracks()[0];
-      if (looksWireless(first.label)) {
-        const inputs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput');
-        const builtIn = inputs.find((d) => d.deviceId !== 'default' && d.deviceId !== 'communications' && d.label && !looksWireless(d.label));
-        if (builtIn) {
-          this.#release();
-          this.#stream = await navigator.mediaDevices.getUserMedia(constraints(builtIn.deviceId));
-          switched = true;
-        }
+      // 장치 이름은 마이크 권한을 받은 뒤에야 보인다
+      const inputs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput');
+      const builtIn = chooseBuiltIn(inputs, first.getSettings().deviceId);
+      if (builtIn) {
+        this.#release();
+        this.#stream = await navigator.mediaDevices.getUserMedia(constraints(builtIn));
+        switched = true;
       }
     } catch (e) {
       this.#release();
