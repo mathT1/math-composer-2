@@ -2,7 +2,9 @@
   import { onMount } from 'svelte';
   import { offline } from './lib/offline.svelte';
   import { router } from './lib/route.svelte';
+  import Build from './screens/Build.svelte';
   import Check from './screens/Check.svelte';
+  import Count from './screens/Count.svelte';
   import Listen from './screens/Listen.svelte';
   import See from './screens/See.svelte';
   import Stage from './screens/Stage.svelte';
@@ -49,7 +51,7 @@
     <main>
       {#if route.screen === 'project'}
         {#if session.project}
-          {#if route.stage === 'listen'}<Listen />{:else if route.stage === 'see'}<See />{:else}<Stage stage={route.stage} />{/if}
+          {#if route.stage === 'listen'}<Listen />{:else if route.stage === 'see'}<See />{:else if route.stage === 'count'}<Count />{:else if route.stage === 'build'}<Build />{:else}<Stage stage={route.stage} />{/if}
         {/if}
       {:else}
         {#if missing}
