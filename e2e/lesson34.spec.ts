@@ -49,6 +49,10 @@ test('3차시: 예측하고, r을 찾고, 평균율 계산표를 채운다', asy
   await expect(page.getByText('2에 아주 가깝습니다')).toBeVisible();
   await page.getByRole('button', { name: '+0.001' }).click();
   await expect(page.getByTestId('r')).toHaveValue('1.06046');
+  // 자판 없이 단추만으로도 목표에 닿는다 (M3-A1): 1.06046 → 1.05946
+  for (let i = 0; i < 10; i++) await page.getByRole('button', { name: '−0.0001', exact: true }).click();
+  await expect(page.getByTestId('r')).toHaveValue('1.05946');
+  await expect(page.getByText('2에 아주 가깝습니다')).toBeVisible();
 
   // 계산표: 맞음과 다시
   await type(page, 'eq-1', '277.18');
@@ -130,8 +134,13 @@ test('음계 공방: 음계를 고르고 내 음계로 정한다', async ({ page
   await expect(page.getByTestId('my-scale')).toHaveText('순정률 장음계');
   await expect(page.getByTestId('state')).toContainText('순정률 장음계');
 
+  // 다른 음계를 둘러보거나 다른 단계에 다녀와도 되돌리기가 남는다 (M3-A4)
+  await page.getByRole('button', { name: '5음계' }).click();
+  await page.getByRole('link', { name: /만들기/ }).click();
+  await page.getByRole('link', { name: /짓기/ }).click();
   await page.getByRole('button', { name: '되돌리기' }).click();
   await expect(page.getByTestId('my-scale')).toHaveText('12평균율');
+  await expect(page.getByRole('button', { name: '되돌리기' })).toHaveCount(0);
 });
 
 test('곡이 있을 때 음계를 바꾸면 묻고, 음을 가장 가까운 음으로 옮기고, 되돌린다 (5.6절)', async ({ page }, info) => {
@@ -197,6 +206,7 @@ test('세로 화면(753×1000)의 비율 실험실과 음계 공방: 넘치지 �
   await page.screenshot({ path: 'test-results/m3-cent-portrait.png' });
   await check();
   await page.getByRole('link', { name: /짓기/ }).click();
+  await expect(page.getByRole('heading', { name: '음계 공방' })).toBeVisible(); // M3-A3
   await page.screenshot({ path: 'test-results/m3-build-portrait.png' });
   await check();
 });

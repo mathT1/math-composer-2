@@ -7,6 +7,7 @@
   import { session } from '../store/session.svelte';
   import Formula from '../ui/Formula.svelte';
   import ScaleCircle from '../ui/ScaleCircle.svelte';
+  import { view } from '../lib/view.svelte';
 
   const project = $derived(session.project!);
   const KINDS = Object.keys(PRESETS) as PresetKind[];
@@ -22,8 +23,8 @@
 
   let asking = $state(false);
   let notice = $state('');
-  /** 바로 앞의 음계와 곡. 되돌리기용 */
-  let undo = $state<{ scale: Scale; song: Project['song'] } | null>(null);
+  /** 바로 앞의 음계와 곡. 이 작업의 것만 쓴다 */
+  const undo = $derived(view.scaleUndo && view.scaleUndo.projectId === project.id ? view.scaleUndo : null);
 
   const copy = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
@@ -45,7 +46,7 @@
       if (moved) p.song = remapSong(p.song, p.scale, next);
       p.scale = next;
     });
-    undo = before;
+    view.scaleUndo = { projectId: project.id, ...before };
     notice = moved ? `내 음계를 “${next.name}”(으)로 바꾸고 곡의 음을 가장 가까운 음으로 옮겼습니다.` : `내 음계를 “${next.name}”(으)로 정했습니다.`;
   }
 
@@ -57,7 +58,7 @@
       p.song = back.song;
     });
     kind = (KINDS.includes(back.scale.kind as PresetKind) ? back.scale.kind : 'equal12') as PresetKind;
-    undo = null;
+    view.scaleUndo = null;
     notice = `이전 음계 “${back.scale.name}”와 곡으로 되돌렸습니다.`;
   }
 
@@ -99,7 +100,7 @@
     current = null;
   }
 
-  const ratioTex = (r: [number, number] | undefined, cents: number) => (r ? (r[1] === 1 ? `${r[0]}` : `\\tfrac{${r[0]}}{${r[1]}}`) : `2^{\\frac{${Math.round(cents / 100)}}{12}}`);
+  const ratioTex = (r: [number, number] | undefined, cents: number) => (cents === 0 ? '1' : r ? (r[1] === 1 ? `${r[0]}` : `\\tfrac{${r[0]}}{${r[1]}}`) : `2^{\\frac{${Math.round(cents / 100)}}{12}}`);
   const off = (cents: number) => {
     const d = cents - Math.round(cents / 100) * 100;
     return Math.abs(d) < 0.005 ? '0' : `${d > 0 ? '+' : '−'}${Math.abs(d).toFixed(2)}`;
@@ -171,9 +172,12 @@
       </div>
     {/if}
     {#if notice}
-      <p class="acts" role="status">
-        <span data-testid="scale-notice">{notice}</span>
-        {#if undo}<button class="btn" onclick={revert}>되돌리기</button>{/if}
+      <p role="status" data-testid="scale-notice">{notice}</p>
+    {/if}
+    {#if undo}
+      <p class="acts">
+        <span class="hint">바꾸기 전: {undo.scale.name}</span>
+        <button class="btn" onclick={revert}>되돌리기</button>
       </p>
     {/if}
   </section>
@@ -272,6 +276,10 @@
   .save .field {
     flex: 1 1 240px;
     max-width: 360px;
+  }
+  .hint {
+    font-size: 15px;
+    color: var(--ink-soft);
   }
   .notice .plain {
     font-weight: 400;

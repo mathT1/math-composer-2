@@ -218,6 +218,8 @@
         <div class="steps" role="group" aria-label="r을 조금씩 바꾸기">
           <button class="btn" onclick={() => step(-0.001)}>−0.001</button>
           <button class="btn" onclick={() => step(-0.0001)}>−0.0001</button>
+          <button class="btn" onclick={() => step(-0.00001)}>−0.00001</button>
+          <button class="btn" onclick={() => step(0.00001)}>+0.00001</button>
           <button class="btn" onclick={() => step(0.0001)}>+0.0001</button>
           <button class="btn" onclick={() => step(0.001)}>+0.001</button>
         </div>
@@ -268,7 +270,7 @@
     <section aria-labelledby="cent">
       <h3 id="cent">센트 만들기</h3>
       <p>
-        두 음의 높이 차이를 재는 단위를 만듭니다. 한 옥타브는 반음 12개이고, 반음 하나를 100센트로 정합니다. 표를 왼쪽부터 채워 보세요.
+        두 음의 높이 차이를 재는 단위를 만듭니다. 한 옥타브는 반음 12개이고, 반음 하나를 100센트로 정합니다. 표를 왼쪽부터 채워 보세요. 옥타브 수는 소수 셋째 자리까지, 반음 수는 소수 둘째 자리까지, 센트는 소수 첫째 자리나 정수로 적으면 됩니다.
         <Formula tex={'\\log_2 x = \\tfrac{\\log x}{\\log 2}'} />를 쓰면 계산기로 구할 수 있습니다.
       </p>
       <div class="scroll">
